@@ -12,6 +12,12 @@ class KalmanFilter:
 	The Kalman filter for a basic single variable plot. The target variable is 25.
 
 	This class calulates the gain, estimate and estimate error, while updating the estimate, estimate error and measurment error.
+	
+	MEA = measurement
+	E_MEA = error in the measurement
+	EST = estimate
+	E_EST = error in the estimate
+	KG = kalman gain
 	"""
 
 	def __init__(self, EST, E_EST, E_MEA, KG):
@@ -28,25 +34,22 @@ class KalmanFilter:
 
 	def gainCalc(self):
 		# Calculate Kalman Gain (KG)
-		#print("KG calc: E_EST: ", E_EST, " E_MEA: ", E_MEA)
 		self.KG = float(self.E_EST)/(self.E_EST + self.E_MEA)
-		#print("KG calc: ", KG)
 		return self.KG
 
 	def estimateCalc(self, MEA):
+		# Calculate new estimate
 		self.EST = self.EST + self.KG*(MEA - self.EST)
-			
 		return self.EST
 
 	def errorCalc(self):
-		self.E_EST = (1-self.KG)*(self.EST)
-		
+		# Calulate new error in the new estimate
+		self.E_EST = (1-self.KG)*(self.EST)		
 		return self.E_EST
 	
 def main():
 	# Set up plotting
 	data = [27,28,21,34,30,22,23,25,28,21,29,32,24,24,26,27,20,31,27,21]
-	
 	estimates = []
 	time = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]
 	print("start kalman")
@@ -74,7 +77,6 @@ def main():
 	
 	plt.legend()
 	plt.show()
-
 
 
 if __name__=="__main__":
