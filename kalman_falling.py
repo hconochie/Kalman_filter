@@ -34,32 +34,22 @@ class KalmanFilter:
 		
 		# Measurments
 		
-
-	#def gainCalc(self):
-		# Calculate Kalman Gain (KG)
-		#self.KG = float(self.E_EST)/(self.E_EST + self.E_MEA)
-		#return self.KG
-
 	def newStateCalc(self):
 		# Calculate new state
-		A = np.array([[1, self.delta_T], [0, 1]])
-		B = np.array([[0.5 * self.delta_T], [self.delta_T]])
+		A = np.array([[1, self.delta_T],
+			      [0,            1]])
+		B = np.array([[0.5 * self.delta_T],
+			      [self.delta_T]])
 		
 		self.state = np.matmul(A, self.state) + np.matmul(B, self.control_u)
 		self.delta_T = self.delta_T + 1
 		return self.state
 
-	#def updateMeasurement(self):
-		# update measurement matrix with new measurement
-
-		#C = np.array([1, 0])
-		
-		
-
-	#def errorCalc(self):
-		# Calulate new error in the new estimate
-		#self.E_EST = (1-self.KG)*(self.EST)		
-		#return self.E_EST
+	def measurementCalc(self, measurement):
+		C = np.array([1, 0]) # position measurment only
+		# C = np.array([1, 0],
+		#	       [0, 1]) # position and velocity measurement
+		Y = np.matmul(C, measurement)
 	
 def main():
 	
@@ -67,6 +57,11 @@ def main():
 	# Initial estimate = 29, initial est error= 3, initial mea error= 2, initial kalman gain = 0.5
 	
 	# Initial parameters for falling object t = 0, fall from 50m with initial velocity of 5m/s
+	
+
+	statePos = []
+	stateVel = []
+	time = []
 	
 	initial_state = np.array([[50], [5]])
 	control_u = np.array([[-9.81]])	
@@ -76,10 +71,30 @@ def main():
 	while i < 10:
 		
 		state = kalmanfilter.newStateCalc()
-		# statelist.append(state)
-		print("state: ", state)
+		statePos.append(state[0])
+		stateVel.append(state[1])
+		time.append(i)
 		
 		i = i + 1	
+	
+	fig, axs = plt.subplots(2)
+	
+	axs[0].plot(time, statePos)
+	axs[0].set_title("State Position")
+	axs[0].set_xlabel("Time (seconds)")
+	axs[0].set_ylabel("Distance (meters)")
+	axs[1].plot(time, stateVel)
+	axs[1].set_title("State Velocity")
+	axs[1].set_xlabel("Time (seconds)")
+	axs[1].set_ylabel("Velocity (meters per second)")
+	
+	fig.tight_layout()
+	plt.legend()
+	plt.show()
+
+
+
+
 	
 if __name__=="__main__":
 	main()

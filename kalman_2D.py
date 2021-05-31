@@ -36,13 +36,20 @@ class KalmanFilter:
 		
 	def newStateCalc(self):
 		# Calculate new state
-		A = np.array([[1, self.delta_T], [0, 1]])
-		B = np.array([[0.5 * self.delta_T], [self.delta_T]])
+		A = np.array([[1, self.delta_T],
+			      [0,            1]])
+		B = np.array([[0.5 * self.delta_T],
+			      [self.delta_T]])
 		
 		self.state = np.matmul(A, self.state) + np.matmul(B, self.control_u)
 		self.delta_T = self.delta_T + 1
 		return self.state
 
+	def measurementCalc(self, measurement):
+		C = np.array([1, 0]) # position measurment only
+		# C = np.array([1, 0],
+		#	       [0, 1]) # position and velocity measurement
+		Y = np.matmul(C, measurement)
 	
 def main():
 	
