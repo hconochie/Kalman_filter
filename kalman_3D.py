@@ -36,15 +36,19 @@ class KalmanFilter:
 		
 	def newStateCalc(self):
 		# Calculate new state
-		A = np.array([[1, 0, self.delta_T,            0],
-			      [0, 1,            0, self.delta_T],
-			      [0, 0,            1,            0],
-			      [0, 0,            0,            1]])
+		A = np.array([[1, 0, 0, self.delta_T,            0,            0],
+			      [0, 1, 0,            0, self.delta_T,            0],
+			      [0, 0, 1,            0,            0, self.delta_T],
+			      [0, 0, 0,            1,            0,            0],
+			      [0, 0, 0,            0,            1,            0],
+			      [0, 0, 0,            0,            0,            1]])
 
-		B = np.array([[0.5 * self.delta_T **2,                   0],
-			      [0                     , 0.5*self.delta_T**2],
-			      [self.delta_T          ,                   0],
-			      [0                     ,        self.delta_T]])
+		B = np.array([[0.5 * self.delta_T **2,                   0,                   0],
+			      [                     0, 0.5*self.delta_T**2,                   0],
+			      [                     0,                   0, 0.5*self.delta_T**2],
+			      [          self.delta_T,                   0,                   0],
+			      [                     0,        self.delta_T,                   0],
+			      [                     0,                   0,        self.delta_T]])
 		
 		self.state = np.matmul(A, self.state) + np.matmul(B, self.control_u)
 		self.delta_T = self.delta_T + 1
@@ -66,8 +70,10 @@ def main():
 
 	statePosX = []
 	statePosY = []
+	statePosZ = []
 	stateVelX = []
 	stateVelY = []
+	stateVelZ = []
 	time = []
 	
 	delta_T = 0
@@ -75,10 +81,13 @@ def main():
 	initial_state = np.array([[3], 
 				  [2], 
 				  [1],
-				  [0.5]]) # x, y, xdot, ydot
+				  [0.5],
+				  [  1],
+				  [ -1]]) # x, y, z, xdot, ydot, zdot
 
-	control_u = np.array([[ 1],
-			      [-2]]) # ax, ay	
+	control_u = np.array([[  1],
+			      [ -2],
+			      [0.2]]) # ax, ay, az	
 	
 	kalmanfilter = KalmanFilter(delta_T, initial_state, control_u)
 	i = 0		
@@ -87,8 +96,10 @@ def main():
 		state = kalmanfilter.newStateCalc()
 		statePosX.append(state[0])
 		statePosY.append(state[1])
-		stateVelX.append(state[2])
-		stateVelY.append(state[3])
+		statePosZ.append(state[2])
+		stateVelX.append(state[3])
+		stateVelY.append(state[4])
+		stateVelZ.append(state[5])
 		time.append(i)
 		
 		i = i + 1	
@@ -98,6 +109,7 @@ def main():
 	
 	axs[0].plot(time, statePosX, label="Pos X")
 	axs[0].plot(time, statePosY, label="Pos Y")
+	axs[0].plot(time, statePosZ, label="Pos Z")
 	axs[0].set_title("State Position")
 	axs[0].set_xlabel("Time (seconds)")
 	axs[0].set_ylabel("Distance (meters)")
@@ -105,6 +117,7 @@ def main():
 	
 	axs[1].plot(time, stateVelX, label="Vel X")
 	axs[1].plot(time, stateVelY, label="Vel Y")
+	axs[1].plot(time, stateVelZ, label="Vel Z")
 	axs[1].set_title("State Velocity")
 	axs[1].set_xlabel("Time (seconds)")
 	axs[1].set_ylabel("Velocity (meters per second)")
