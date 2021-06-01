@@ -50,19 +50,36 @@ class KalmanFilter:
 		self.delta_T = self.delta_T + 1
 		return self.state
 
+	def stateCovarianceCalc(self, A):
+		# Calculate devation matrix a
+		unityMat = np.array([[1, 1],
+				     [1, 1]])
+		a = A - np.dot(unityMat, A)* 0.2
+		self.P = np.matmul(a.transpose(), a)
+
 	def measurementCalc(self, measurement):
 		C = np.array([1, 0]) # position measurment only
 		# C = np.array([1, 0],
 		#	       [0, 1]) # position and velocity measurement
 		Y = np.matmul(C, measurement)
+
+	def measCovarianceCalc(self):
+
 	
 def main():
 	
-	# Starting the kalman filter
-	# Initial estimate = 29, initial est error= 3, initial mea error= 2, initial kalman gain = 0.5
-	
-	# Initial parameters for falling object t = 0, fall from 50m with initial velocity of 5m/s
-	
+	# Starting the kalman filter for tracking an aeroplane
+	# Initial estimate: [x0=4000, y0=3000, x0dot=280, y0dot=120]
+
+	# Initial conditions: ax=2, vx=280, delta_t=1, delta_x=25
+
+	# Process errors: delta_Px=20, delta_PVx=6
+
+	# Observation errors: delta_x=25, delta_Vx=6
+	# Observations in the x, Pos and Vel
+	Pos_obs = [4000, 4260, 4550, 4860, 5110]
+	Vel_obs = [ 280,  282,  285,  286,  290]
+
 
 	statePosX = []
 	statePosY = []
@@ -77,12 +94,15 @@ def main():
 				  [1],
 				  [0.5]]) # x, y, xdot, ydot
 
+	initial_P = np.array([20, 5],
+			     [ 0, 1]) # 20m x error, 5m/s x vel error
+
 	control_u = np.array([[ 1],
 			      [-2]]) # ax, ay	
 	
 	kalmanfilter = KalmanFilter(delta_T, initial_state, control_u)
 	i = 0		
-	while i < 10:
+	for i in len(range(Pos_obs)):
 		
 		state = kalmanfilter.newStateCalc()
 		statePosX.append(state[0])

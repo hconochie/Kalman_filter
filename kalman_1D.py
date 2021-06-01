@@ -20,7 +20,7 @@ class KalmanFilter:
 	KG = kalman gain
 	"""
 
-	def __init__(self, delta_T, state, control_u):
+	def __init__(self, delta_T, state, P, control_u):
 		# time 
 		self.delta_T = delta_T
 		
@@ -29,7 +29,7 @@ class KalmanFilter:
 
 		# States
 		self.state = state
-		
+		self.P = P # process covariance matrix
 		self.control_u = control_u
 		
 		# Measurments
@@ -47,17 +47,31 @@ class KalmanFilter:
 		return self.state
 
 	def measurementCalc(self, measurement):
-		C = np.array([1, 0]) # position measurment only
-		# C = np.array([1, 0],
-		#	       [0, 1]) # position and velocity measurement
+		# C = np.array([1, 0]) # position measurment only
+		C = np.array([1, 0],
+	                     [0, 1]) # position and velocity measurement
 		Y = np.matmul(C, measurement)
 
-	def covarianceCalc(self):
+	def currentStateCalc(self, Y)
+		# Calculating the current state
+		H = np.identity(2)
+		self.state = self.state + self.K * (Y- np.matmul(H,self.state))
+
+	def stateCovarianceCalc(self):
+		A = np.array([[1, self.delta_T],
+			      [0,            1]])
 		# State Covariance Matrix
-		self.P = np.matmul(np.matmul(A, self.P), A.transpose()) + self.Q
+		self.P = np.matmul(np.matmul(A, self.P), A.transpose())
+		
+	def kalmanGainCalc(self):
 		# Kalman Gain
-		self.K = np.matmul(self.P, H.transpose()) / (np.matmul(np.matmul(H, self.P), H.transpose()) + self.R)
-	
+		H = np.identity(2)
+		
+		R = np.array([[25**2,    0],
+			      [    0, 6**2]])
+		self.K = np.matmul(self.P, H.transpose()) / (np.matmul(np.matmul(H, self.P), H.transpose()) + R)
+
+			
 def main():
 	
 	# Starting the kalman filter
@@ -65,17 +79,26 @@ def main():
 	
 	# Initial parameters for falling object t = 0, fall from 50m with initial velocity of 5m/s
 	
+	# Observations
+	Pos_obs = [4000, 4260, 4550, 4860, 5110]
+	Vel_obs = [ 280,  282,  285,  286,  290]	
 
 	statePos = []
 	stateVel = []
 	time = []
 	
-	initial_state = np.array([[50], [5]])
+	initial_state = np.array([[Pos_obs[0]],
+				  [Vel_obs[0]]])
+	
+	# Initial process errors matrix 
+	initial_P = np.array([[20**2, 20*5],
+			      [ 5*20, 5**2]]) # delta_x = 20 delta_Vx = 5
+
 	control_u = np.array([[-9.81]])	
 	
-	kalmanfilter = KalmanFilter(0, initial_state, control_u)
+	kalmanfilter = KalmanFilter(0, initial_state, initial_P, control_u)
 	i = 0		
-	while i < 10:
+	while i in len(range(Pos_obs)):
 		
 		state = kalmanfilter.newStateCalc()
 		statePos.append(state[0])
@@ -84,6 +107,7 @@ def main():
 		
 		i = i + 1	
 	
+	# PLOTTING	
 	fig, axs = plt.subplots(2)
 	
 	axs[0].plot(time, statePos)
