@@ -9,36 +9,48 @@ import matplotlib.pyplot as plt
 
 class KalmanFilter:
 	"""
-	The Kalman filter is multi dimensional.
+	This class Kalman filter is for 2 DOF systems creating states with position and velocity
+	in x and y directions (or two other parameters)
+	This class calculates the predicted state, predicted covariance matrix, kalman gain, 
+	new state, new state covariance matrix, and also processes new measurements.
 
-	This class calulates the gain, estimate and estimate error, while updating the estimate, estimate error and measurment error.
-	
-	MEA = measurement
-	E_MEA = error in the measurement
-	EST = estimate
-	E_EST = error in the estimate
-	KG = kalman gain
+	---
+	Glossary
+	---
+	delta_T = time between measurements
+	K = kalman gain
+	state = kalman filter state
+	stateP = predicted state
+	P = process covariance matrix
+	PP = predicted process covariance matrix
+	control_u = control matrix u
+	H = transformation matrix (whatever it needs to be)
 	"""
 
-	def __init__(self, delta_T, K, state, P, control_u, H):
-		# time 
+	def __init__(self, delta_T, K, state, P, control_u, R):
+		# Time per measurement (constant value) 
 		self.delta_T = delta_T
 		
 		# Kalman Gain
 		self.K = K
 
-		# States
+		# Current state
 		self.state = state
+		
+		# Process covariance matrix
 		self.P = P
 		
-		# control matrix u
+		# Control matrix u
 		self.control_u = control_u
+
+		# Observation error matrix
+		self.R = R
 	
-		# H matrix
-		self.H = H	
 		
 	def statePCalc(self):
-		"Calculate new predicted state"
+		"""
+		Calculate the predicted state
+		"""
 		A = np.array([[1, 0, self.delta_T,            0],
 			      [0, 1,            0, self.delta_T],
 			      [0, 0,            1,            0],
@@ -53,116 +65,199 @@ class KalmanFilter:
 		self.delta_T = self.delta_T + 1
 		return self.stateP
 
-	def statePCovarianceCalc(self, A):
-		"Calculate devation matrix a and then the predicted covariance matrix "
-		unityMat = np.array([[1, 1],
-				     [1, 1]])
-		a = A - np.dot(unityMat, A)* 0.2
-		self.PP = np.matmul(a.transpose(), a)
+	def statePCovarianceCalc(self):
+		"""
+		Calculate the predicted process covariance matrix
+		"""
+		A = np.array([[1, 0, self.delta_T,            0],
+			      [0, 1,            0, self.delta_T],
+			      [0, 0,            1,            0],
+			      [0, 0,            0,            1]])
+		
+		self.PP = np.matmul(np.matmul(A, self.P), A.transpose()) # + self.Q
+		self.PP = np.array([[self.PP[0][0], 0, 0, 0],
+				    [0, self.PP[1][1], 0, 0],
+				    [0, 0, self.PP[2][2], 0],
+				    [0, 0, 0, self.PP[3][3]]]) # simply matrix
+
 		return self.PP
 
 	def kalmanGainCalc(self):
-		"calculate kalman gain"
+		"""
+		Calculate kalman gain
+		"""
 		
 		#update parameters
-		self.PP = statePCovariancCalc()
-		self.R = 
-
-		self.K = np.matmul(self.PP, self.H.transpose()) / (np.matmul(np.matmul(self.H, self.PP), self.H.transpose()) + self.R)
+		H = np.identity(4)
+		
+		self.K = np.matmul(self.PP, H.transpose()) / (np.matmul(np.matmul(H, self.PP), H.transpose()) + self.R)
+		self.K = np.array([[self.K[0][0], 0, 0, 0],
+				   [0, self.K[1][1], 0, 0],
+				   [0, 0, self.K[2][2], 0],
+				   [0, 0, 0, self.K[3][3]]])
 		return self.K
 
 	def measurementCalc(self, measurement):
-		"calculate new measurement"
-		C = np.array([1, 0]) # position measurment only
-		# C = np.array([1, 0],
-		#	       [0, 1]) # position and velocity measurement
+		"""
+		Calculate new measurement
+		Must be a 4x1 matrix
+		"""
+		#C = np.array([1, 0, 0, 0]) # position measurment only
+		
+		# Use Pos x, Pos y, Vel x, Vel y
+		C = np.array([[1, 0, 0, 0],
+			      [0, 1, 0, 0], 
+			      [0, 0, 1, 0], 
+			      [0, 0, 0, 1]])
+		
 		Y = np.matmul(C, measurement)
+		return Y
 
-	def newStateCalc(self, measurement):
-		"calculate new state"
+	def newStateCalc(self, Y):
+		"""
+		Calculate new state
+		"""
 		
 		# update parameters
-		self.stateP = statePCalc()
-		self.K = kalmanGainCalc()
-		self.Y = measurementCalc(measurement)
+		H = np.identity(4)
+		self.PP = self.statePCovarianceCalc()
+		self.K = self.kalmanGainCalc()
 	
-		self.state = self.stateP + self.K * (self.Y - np.matmul(self.H, self.state)
-
+		self.state = self.stateP + np.matmul(self.K, (Y - np.matmul(H, self.stateP)))
+		self.P = self.newCovarianceCalc()
+		return self.state
 
 	def newCovarianceCalc(self):
-		"calculate new covariance matrix"
-		self.P = np.matmul((np.identity(2) - self.K*self.H), self.PP)
-
+		"""
+		Calculate new covariance matrix
+		"""
+		H = np.identity(4)
+		self.P = np.matmul((np.identity(4) - np.matmul(self.K, H)), self.PP)
+		return self.P
 	
 def main():
+	"""
+	Initital estimate: posx=4000, Posy=3000, velx=280, vely=100
 	
-	# Starting the kalman filter for tracking an aeroplane
-	# Initial estimate: [x0=4000, y0=3000, x0dot=280, y0dot=120]
+	Change the observations for your measurements
+	"""	
+	# Observations	
+	Pos_obs_x = [4000, 4260, 4550, 4860, 5110]
+	Pos_obs_y = [3000, 2910, 2820, 2920, 3000]
+	Vel_obs_x = [ 280,  282,  285,  286,  290]
+	Vel_obs_y = [ 120,  110,   50,   60,   90]
 
-	# Initial conditions: ax=2, vx=280, delta_t=1, delta_x=25
-
-	# Process errors: delta_Px=20, delta_PVx=6
-
-	# Observation errors: delta_x=25, delta_Vx=6
-	# Observations in the x, Pos and Vel
-	
-	Pos_obs = [4000, 4260, 4550, 4860, 5110]
-	Vel_obs = [ 280,  282,  285,  286,  290]
-
-
+	# kalman state tracking
 	statePosX = []
 	statePosY = []
 	stateVelX = []
 	stateVelY = []
-	time = []
+
+	# predicted state tracking
+	statePosPX = []
+	statePosPY = []
+	stateVelPX = []
+	stateVelPY = []
+	time = [0, 1, 2, 3, 4]
 	
-	delta_T = 0
+	delta_T = 1
 
 	initial_state = np.array([[4000], 
 				  [3000], 
 				  [280],
 				  [120]]) # x, y, xdot, ydot given
 
-	initial_P = np.array([20, 5],
-			     [ 0, 1]) # 20m x error, 5m/s x vel error
+	initial_P = np.array([[20**2, 0,  0, 0],
+			      [ 0, 5**2,  0, 0],
+			      [ 0, 0, 10**2, 0],
+			      [ 0, 0, 0,  2**2]]) # 20m x error, 5m/s x vel error, 10m y error, 2m/s y vel error
 
 	control_u = np.array([[2],
-			      [0]]) # ax, ay	
+			      [1]]) # ax, ay	
 	
-	kalmanfilter = KalmanFilter(delta_T, initial_state, control_u)
-	i = 0		
-	for i in len(range(Pos_obs)):
-		
-		state = kalmanfilter.newStateCalc()
+	K = np.array([[0.5, 0, 0, 0],
+		      [0, 0.5, 0, 0],
+		      [0, 0, 0.5, 0],
+		      [0, 0, 0, 0.5]])
+	
+	deltaX_ObsError = 20	
+	deltaY_ObsError = 10	
+	deltaVX_ObsError = 5	
+	deltaVY_ObsError = 2	
+	R = np.array([[deltaX_ObsError**2, 0,  0, 0],
+       		      [0, deltaY_ObsError**2,  0, 0],
+		      [0, 0, deltaVX_ObsError**2, 0],
+		      [0, 0, 0, deltaVY_ObsError**2]])
+	
+	kalmanfilter = KalmanFilter(delta_T, K, initial_state, initial_P, control_u, R)
+	i = 1		
+	for i in range(len(Pos_obs_x)):
+		measurement = kalmanfilter.measurementCalc(np.array([[Pos_obs_x[i]],
+								     [Pos_obs_y[i]],
+								     [Vel_obs_x[i]],
+								     [Vel_obs_y[i]]]))
+	
+		stateP = kalmanfilter.statePCalc()
+		statePosPX.append(stateP[0])
+		statePosPY.append(stateP[1])
+		stateVelPX.append(stateP[2])
+		stateVelPY.append(stateP[3])
+		print("predicted state: ", stateP)
+
+		state = kalmanfilter.newStateCalc(measurement)
 		statePosX.append(state[0])
 		statePosY.append(state[1])
 		stateVelX.append(state[2])
 		stateVelY.append(state[3])
-		time.append(i)
+		print("state: ", state)
 		
 		i = i + 1	
+		print
+		print
 	
 	# PLOTTING	
-	fig, axs = plt.subplots(3)
+	fig, axs = plt.subplots(3,2)
+
+	print(len(time))
+	print(len(statePosX))
+	print(len(statePosPX))
+	print(len(Pos_obs_x))	
+	axs[0,0].plot(time, statePosX, label="kalman filter")
+	axs[0,0].plot(time, statePosPX, label="predicted")
+	axs[0,0].plot(time, Pos_obs_x, label="observation")
+	axs[0,0].set_title("State Position X")
+	axs[0,0].set_xlabel("Time (seconds)")
+	axs[0,0].set_ylabel("Distance (meters)")
+	axs[0,0].legend(loc='upper left')
+
+	axs[0,1].plot(time, statePosY, label="kalman filter")
+	axs[0,1].plot(time, statePosPY, label="predicted")
+	axs[0,1].plot(time, Pos_obs_y, label="observation")
+	axs[0,1].set_title("State Position Y")
+	axs[0,1].set_xlabel("Time (seconds)")
+	axs[0,1].set_ylabel("Distance (meters)")
+	axs[0,1].legend(loc='upper left')
 	
-	axs[0].plot(time, statePosX, label="Pos X")
-	axs[0].plot(time, statePosY, label="Pos Y")
-	axs[0].set_title("State Position")
-	axs[0].set_xlabel("Time (seconds)")
-	axs[0].set_ylabel("Distance (meters)")
-	axs[0].legend()
+	axs[1,0].plot(time, stateVelX, label="kalman filter")
+	axs[1,0].plot(time, stateVelPX, label="predicted")
+	axs[1,0].plot(time, Vel_obs_x, label="observation")
+	axs[1,0].set_title("State Velocity X")
+	axs[1,0].set_xlabel("Time (seconds)")
+	axs[1,0].set_ylabel("Velocity (meters per second)")
+	axs[1,0].legend(loc='upper left')
 	
-	axs[1].plot(time, stateVelX, label="Vel X")
-	axs[1].plot(time, stateVelY, label="Vel Y")
-	axs[1].set_title("State Velocity")
-	axs[1].set_xlabel("Time (seconds)")
-	axs[1].set_ylabel("Velocity (meters per second)")
-	axs[1].legend()
+	axs[1,1].plot(time, stateVelY, label="kalman filter")
+	axs[1,1].plot(time, stateVelPY, label="predicted")
+	axs[1,1].plot(time, Vel_obs_y, label="observation")
+	axs[1,1].set_title("State Velocity Y")
+	axs[1,1].set_xlabel("Time (seconds)")
+	axs[1,1].set_ylabel("Velocity (meters per second)")
+	axs[1,1].legend(loc='upper left')
 	
-	axs[2].plot(statePosX, statePosY)
-	axs[2].set_title("Trajectory")
-	axs[2].set_xlabel("X pos")
-	axs[2].set_ylabel("Y pos")
+	axs[2,0].plot(statePosX, statePosY)
+	axs[2,0].set_title("Trajectory")
+	axs[2,0].set_xlabel("X pos")
+	axs[2,0].set_ylabel("Y pos")
 	fig.tight_layout()
 	plt.legend()
 	plt.show()

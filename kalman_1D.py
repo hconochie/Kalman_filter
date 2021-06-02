@@ -9,27 +9,36 @@ import matplotlib.pyplot as plt
 
 class KalmanFilter:
 	"""
-	The Kalman filter is multi dimensional.
+	This class Kalman filter is for 1 DOF systems creating states with postion and velocity.
 
-	This class calulates the gain, estimate and estimate error, while updating the estimate, estimate error and measurment error.
+	This class calulates the predicted state, predicted covariance matrix, kalman gain,
+	new state and new state covariance matrix, and also processes the new measurements.
 	
-	MEA = measurement
-	E_MEA = error in the measurement
-	EST = estimate
-	E_EST = error in the estimate
-	KG = kalman gain
+	---
+	Glossary
+	---
+	delta_T = time between measurements
+	K = kalman gain
+	state = kalman filter state
+	stateP = predicted state
+	P = process covariance matrix
+	PP = predicted covariance matrix
+	control_u = control matrix u
+	H = transformation matrix (whatever it is required to be)
 	"""
 
 	def __init__(self, delta_T, K, state, P, control_u, H):
-		# time 
+		# Time per measurement (constant value) 
 		self.delta_T = delta_T
 		
 		# Kalman Gain
 		self.K = K
 
-		# States
+		# Current state
 		self.state = state
-		self.P = P # process covariance matrix
+		
+		# Process covariance matrix
+		self.P = P
 		
 		# Control matrix u
 		self.control_u = control_u
@@ -38,8 +47,7 @@ class KalmanFilter:
 		self.H = H
 		
 	def statePCalc(self):
-		# print("delta_T: ", self.delta_T)
-		# Calculate new state
+		"""Calculating the predicted state"""
 		A = np.array([[1, self.delta_T],
 			      [0,            1]])
 		
@@ -48,24 +56,26 @@ class KalmanFilter:
 		
 		# Predicted states
 		self.stateP = np.matmul(A, self.state) + np.matmul(B, self.control_u)
+		
 		print("previous state",self.state)
-		print("predicted state P: ", self.stateP)
+		print("predicted state: ", self.stateP)
 		return self.stateP # 2x1 matrix
 
 	def statePCovarianceCalc(self):
-		print("prev process covar matrix P: ", self.P)
+		"""Calculating the predicted process covariance matrix"""
+		print("prev process covariance matrix P: ", self.P)
 		A = np.array([[1, self.delta_T],
 			      [0,            1]])
 		# State Covariance Matrix
 		self.PP = np.matmul(np.matmul(A, self.P), A.transpose()) # + self.Q
 		self.PP = np.array([[self.PP[0][0],             0],
 				    [            0, self.PP[1][1]]])
-		print("process covar matrix PP: ", self.PP)
-			
+		
+		print("predicted covariance matrix: ", self.PP)	
 		return self.PP # 2x2 matrix
 	
 	def kalmanGainCalc(self):
-		# Kalman Gain
+		"""Kalman Gain"""
 		H = np.identity(2)
 		
 		R = np.array([[25**2,    0],
@@ -78,7 +88,7 @@ class KalmanFilter:
 		return self.K # 2x2 matrix 
 	
 	def measurementCalc(self, measurement): 
-		# measurement should be a 2x1 matrix (column)
+		"""measurement should be a 2x1 matrix (column)"""
 		# C = np.array([1, 0]) # position measurment only
 		C = np.array([[1, 0],
 	                     [0, 1]]) # position and velocity measurement
@@ -87,14 +97,12 @@ class KalmanFilter:
 		return Y # 2x1 matrix
 
 	def newStateCalc(self, Y):
-		# Calculating the current state
+		"""Calculating the current state"""
 		
 		# Parameters
 		self.PP = self.statePCovarianceCalc()
 		self.K = self.kalmanGainCalc()	
 
-		print("predicted state: ", self.stateP, "H: ", self.H, "Kalman Gain: ", self.K )
-		
 		self.state = self.stateP + np.matmul(self.K, (Y- np.matmul(self.H,self.stateP)))
 		self.P = self.newCovarianceCalc()
 		print("New State! : ",self.state)
@@ -102,31 +110,32 @@ class KalmanFilter:
 		return self.state
 
 	def newCovarianceCalc(self):
-		"calculate new covarian matrix"
+		"Calculate new covariance matrix"
 		self.P = np.matmul((np.identity(2) - self.K*self.H), self.PP)
 		return self.P
 			
 def main():
+	"""
+	Initial estimate: Pos=4000, Vel=280
 	
-	# Starting the kalman filter
-	# Initial estimate = 29, initial est error= 3, initial mea error= 2, initial kalman gain = 0.5
-	
-	# Initial parameters for falling object t = 0, fall from 50m with initial velocity of 5m/s
-	
+	Change the observations your measurements
+	"""
 	# Observations
 	Pos_obs = [4000, 4260, 4550, 4860, 5110]
 	Vel_obs = [ 280,  282,  285,  286,  290]	
 	
 	# predicted kalman filter states
-	statePosP = [4000]
-	stateVelP = [280]
+	statePosP = [Pos_obs[0]]
+	stateVelP = [Vel_obs[0]]
 	
 	# kalman filter states	
-	statePos = [4000]
-	stateVel = [280]
+	statePos = [Pos_obs[0]]
+	stateVel = [Vel_obs[0]]
 	time = [0]
 	
 	delta_T = 1
+
+	# Initial Kalman gain (changes in the first instance)
 	K = np.array([[0.5,   0],
 		      [0  , 0.5]])
 
@@ -137,10 +146,13 @@ def main():
 	initial_P = np.array([[20**2, 0],
 			      [ 0, 5**2]]) # delta_x = 20 delta_Vx = 5
 
+	# 1DOF system has 1 acceleration for the control
 	control_u = np.array([[2]]) # ax	
 
+	# Change this if required (just for transformations)
 	H = np.identity(2)
 	
+	# Start the Kalman Filter
 	kalmanfilter = KalmanFilter(delta_T, K, initial_state, initial_P, control_u, H)
 	i = 1		
 	while i in range(len(Pos_obs)):
@@ -154,9 +166,6 @@ def main():
 		statePos.append(state[0])
 		stateVel.append(state[1])
 		time.append(i)
-		print("length of time: ", len(time))
-		print("length of Pos Obs: ", len(Pos_obs))
-		print("length of statePos: ", len(statePos))
 		i = i + 1
 		print
 		print	
