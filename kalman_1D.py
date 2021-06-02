@@ -90,7 +90,6 @@ class KalmanFilter:
 		# Calculating the current state
 		
 		# Parameters
-		self.stateP = self.statePCalc()
 		self.PP = self.statePCovarianceCalc()
 		self.K = self.kalmanGainCalc()	
 
@@ -117,11 +116,15 @@ def main():
 	# Observations
 	Pos_obs = [4000, 4260, 4550, 4860, 5110]
 	Vel_obs = [ 280,  282,  285,  286,  290]	
-
 	
-	statePos = []
-	stateVel = []
-	time = []
+	# predicted kalman filter states
+	statePosP = [4000]
+	stateVelP = [280]
+	
+	# kalman filter states	
+	statePos = [4000]
+	stateVel = [280]
+	time = [0]
 	
 	delta_T = 1
 	K = np.array([[0.5,   0],
@@ -144,10 +147,16 @@ def main():
 		measurement = kalmanfilter.measurementCalc(np.array([[Pos_obs[i]],
 								     [Vel_obs[i]]]))
 		print("new measurement: ", measurement)
+		stateP = kalmanfilter.statePCalc()
+		statePosP.append(stateP[0])
+		stateVelP.append(stateP[1])
 		state = kalmanfilter.newStateCalc(measurement)
 		statePos.append(state[0])
 		stateVel.append(state[1])
 		time.append(i)
+		print("length of time: ", len(time))
+		print("length of Pos Obs: ", len(Pos_obs))
+		print("length of statePos: ", len(statePos))
 		i = i + 1
 		print
 		print	
@@ -155,17 +164,22 @@ def main():
 	# PLOTTING	
 	fig, axs = plt.subplots(2)
 	
-	axs[0].plot(time, statePos)
+	axs[0].plot(time, statePos, label="kalman filter")
+	axs[0].plot(time, Pos_obs, label="observations")
+	axs[0].plot(time, statePosP, label="predicted")
 	axs[0].set_title("State Position")
 	axs[0].set_xlabel("Time (seconds)")
 	axs[0].set_ylabel("Distance (meters)")
-	axs[1].plot(time, stateVel)
+	axs[0].legend(loc = 'upper left')
+	axs[1].plot(time, stateVel, label="kalman filter")
+	axs[1].plot(time, Vel_obs, label="observations")
+	axs[1].plot(time, stateVelP, label="predicted")
 	axs[1].set_title("State Velocity")
 	axs[1].set_xlabel("Time (seconds)")
 	axs[1].set_ylabel("Velocity (meters per second)")
+	axs[1].legend(loc = 'upper left')
 	
 	fig.tight_layout()
-	plt.legend()
 	plt.show()
 
 
