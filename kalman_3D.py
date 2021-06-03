@@ -9,33 +9,47 @@ import matplotlib.pyplot as plt
 
 class KalmanFilter:
 	"""
-	The Kalman filter is multi dimensional.
-
-	This class calulates the gain, estimate and estimate error, while updating the estimate, estimate error and measurment error.
+	This class kalman filter is for 3 DOF systems creating states with position and velocity in three axes.
 	
-	MEA = measurement
-	E_MEA = error in the measurement
-	EST = estimate
-	E_EST = error in the estimate
-	KG = kalman gain
+	This class calculates the predicted state, predicted covariance matrix, kalman gain, new state
+	new state covariance matrix and also processes new measurements
+	
+	---
+	Glossary
+	---
+	delta_T = time between measurements (constant value)
+	K = Kalman gain
+	state = kalman filter state
+	stateP = predicted state
+	P = process covariance matrix
+	PP = predicted process covariance matrix
+	control_u control matrix u
+	H = trasnformation matrix (varies for what it needs to be)
 	"""
 
-	def __init__(self, delta_T, state, control_u):
-		# time 
+	def __init__(self, delta_T, K, state, P, control_u, R):
+		# Time per measurement 
 		self.delta_T = delta_T
 		
 		# Kalman Gain
-		
+		self.K = K	
 
-		# States
+		# Current state
 		self.state = state
-		
+	
+		# Process covariance matrix P
+		self.P = P
+
+		# control matrix u	
 		self.control_u = control_u
 		
-		# Measurments
+		# Observation error matrix
+		self.R = R
 		
-	def newStateCalc(self):
-		# Calculate new state
+	def statePCalc(self):
+		"""
+		Calculate the predicted state
+		"""
 		A = np.array([[1, 0, 0, self.delta_T,            0,            0],
 			      [0, 1, 0,            0, self.delta_T,            0],
 			      [0, 0, 1,            0,            0, self.delta_T],
@@ -50,16 +64,75 @@ class KalmanFilter:
 			      [                     0,        self.delta_T,                   0],
 			      [                     0,                   0,        self.delta_T]])
 		
-		self.state = np.matmul(A, self.state) + np.matmul(B, self.control_u)
-		self.delta_T = self.delta_T + 1
-		return self.state
+		self.stateP = np.matmul(A, self.state) + np.matmul(B, self.control_u)
+		return self.stateP
+
+	def statePCovarianceCalc(self):
+		A = np.array([[1, 0, 0, self.delta_T,            0,            0],
+			      [0, 1, 0,            0, self.delta_T,            0],
+			      [0, 0, 1,            0,            0, self.delta_T],
+			      [0, 0, 0,            1,            0,            0],
+			      [0, 0, 0,            0,            1,            0],
+			      [0, 0, 0,            0,            0,            1]])
+
+		self.PP = np.matmul(np.matmul(A, self.P), A.transpose()) # + self.Q
+		self.PP = np.array([[self.PP[0][0], 0, 0, 0, 0, 0],
+				    [0, self.PP[1][1], 0, 0, 0, 0],
+				    [0, 0, self.PP[2][2], 0, 0, 0],
+				    [0, 0, 0, self.PP[3][3], 0, 0],
+				    [0, 0, 0, 0, self.PP[4][4], 0],
+				    [0, 0, 0, 0, 0,  self.PP[5][5]]) # simply matrix
+		return self.PP
+		
+	def kalmanGainCalc(self):
+		"""
+		Calculate kalman gain
+		"""
+		# parameters
+		H = np.identity(6)
+		
+		self.K = np.matmul(self.PP, H.transpose()) / (np.matmul(np.matmul(H, self.PP), H.transpose()) + self.R)
+		self.K = np.array([[self.K[0][0], 0, 0, 0, 0, 0],
+				   [0, self.K[1][1], 0, 0, 0, 0],
+				   [0, 0, self.K[2][2], 0, 0, 0],
+				   [0, 0, 0, self.K[3][3], 0, 0],
+				   [0, 0, 0, 0, self.K[4][4], 0],
+				   [0, 0, 0, 0, 0, self.K[5][5]]])
+		return self.K
 
 	def measurementCalc(self, measurement):
-		C = np.array([1, 0]) # position measurment only
-		# C = np.array([1, 0],
-		#	       [0, 1]) # position and velocity measurement
+		C = np.array([[1, 0, 0, 0, 0, 0],
+		              [0, 1, 0, 0, 0, 0],
+			      [0, 0, 1, 0, 0, 0],
+			      [0, 0, 0, 1, 0, 0],
+			      [0, 0, 0, 0, 1, 0],
+			      [0, 0, 0, 0, 0, 1]]) # position and velocity measurements in XYZ
+		
 		Y = np.matmul(C, measurement)
+		return Y
 	
+	def newStateCalc(self, Y):
+		"""
+		Calculate new state
+		"""
+		# update parameters
+		H = np.identity(6)
+		self.PP = self.statePCovarianceCalc()
+		self.K = self.kalmanGainCalc()
+		
+		self.state = self.stateP + np.matmul(self.K, (Y - np.matmul(H, self.stateP)))
+		self.P = self.newCovarianceCalc()
+		return self.state
+
+	def newCovarianceCalc(self):
+		"""
+		Calculate new covariance matrix
+		"""
+		H = np.identity(6)
+		self.P = np.matmul((np.identity(6) - np.matmul(self.K, H)), self.PP)
+		return self.P
+
+
 def main():
 	
 	# Starting the kalman filter
@@ -67,16 +140,26 @@ def main():
 	
 	# Initial parameters for falling object t = 0, fall from 50m with initial velocity of 5m/s
 	
-
+	# state tracking
 	statePosX = []
 	statePosY = []
 	statePosZ = []
 	stateVelX = []
 	stateVelY = []
 	stateVelZ = []
-	time = []
+
+	# predicted state tracking
+	statePPosX = []
+	statePPosY = []
+	statePPosZ = []
+	statePVelX = []
+	statePVelY = []
+	statePVelZ = []
 	
-	delta_T = 0
+
+	time = [0, 1, 2, 3, 4]
+	
+	delta_T = 1
 
 	initial_state = np.array([[3], 
 				  [2], 

@@ -62,7 +62,6 @@ class KalmanFilter:
 			      [0                     ,        self.delta_T]])
 		
 		self.stateP = np.matmul(A, self.state) + np.matmul(B, self.control_u)
-		self.delta_T = self.delta_T + 1
 		return self.stateP
 
 	def statePCovarianceCalc(self):
@@ -102,7 +101,6 @@ class KalmanFilter:
 		Calculate new measurement
 		Must be a 4x1 matrix
 		"""
-		#C = np.array([1, 0, 0, 0]) # position measurment only
 		
 		# Use Pos x, Pos y, Vel x, Vel y
 		C = np.array([[1, 0, 0, 0],
