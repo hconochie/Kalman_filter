@@ -1,4 +1,4 @@
-# Kalman Filter Tracker
+# Kalman Filter Tracker #
 Learning the kalman filter one complexity at a time
 
 The numeric kalman filter does not have matrices and is a simple example calculating errors and updating a numeric state.
@@ -14,9 +14,9 @@ The process is as follows:
 
 Plot the results.
 
----
+
 1D, 2D, 3D Filters
----
+====
 Moving into more complexity, the 1D, 2D and 3D kalman filters are all the same process but vary in the sizes of the matrices due to the variable they are tracking.
 
 The process is as follows:
@@ -34,14 +34,14 @@ The process is as follows:
 
 Plot the results
 
----
-Explanation
----
+
+### Explanation
+
 The kalman filter process requires a number of steps to be calculed in sequence. This sequence enables the prediction step and measurement step to be executed before the kalman gain can produce a weighting for each of the steps. Once the kalman gain has the weighting to how much of each step will produce the new state, it calculates the new state and new process covariance matrix. Each calculation will now be broken down:
 
----
-Prediction step
----
+
+### Prediction step
+
 The prediction step uses the previous state, previous process covariance matrix and control matrix.
 
 Firstly, the predicted state equation:
@@ -56,27 +56,27 @@ Secondly, the predicted process covariance matrix Pp:
 
 Where A is a transitional matrix, P is the previous process covariance matrix and Q is the process noise.
 
----
-Measurement Step
----
+
+### Measurement Step
+
 The measurement step processes the new measurement into the correct matrix format for use. In this step updates to the measurement error can also be updated.
 
 <img src="https://latex.codecogs.com/svg.latex?Y=CY_m&plus;Z" title="Y=CY_m+Z" />
 
 Where Y is the new measurement matrix, C is a transitional matrix, Ym is the raw measurement and Z is the measurement noise.
 
----
-Kalman Gain
----
+
+### Kalman Gain
+
 The Kalman gain depicts how much of the predicted state and how much of the measurement to use in forming the new kalman filtered state. This values changes based on the process covariance matrix as follows:
 
 <img src="https://latex.codecogs.com/svg.latex?K=\frac{P_pH^T}{HP_pH^T&plus;R}" title="K=\frac{P_pH^T}{HP_pH^T+R}" />
 
 Where K is the kalman gain, Pp is the predicted process covariance matrix, H is a transitional matrix enabling matrix devision and R is the measurement error matrix.
 
----
-New State
----
+
+### New State
+
 The new state and accompaning process covariance matrix can now be calculated.
 
 <img src="https://latex.codecogs.com/svg.latex?X=X_p&plus;K[Y-HX_p]" title="X=X_p+K[Y-HX_p]" />
