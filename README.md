@@ -46,7 +46,7 @@ The prediction step uses the previous state, previous process covariance matrix 
 
 Firstly, the predicted state equation:
 
-<img src="https://latex.codecogs.com/svg/latex?\Large&space;X_p = AX + Bu + w" title="\Large X_p = AX + Bu + w"}/>
+<img src="https://latex.codecogs.com/svg/latex?X_p=AX&plus;Bu&plus;w" title="X_p=AX+Bu+w" />
 
 Where X_p is the predicted state, A and B are transitional matrices, u is the control matrix and w is the noise.
 
