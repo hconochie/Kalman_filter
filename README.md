@@ -16,7 +16,7 @@ Plot the results.
 
 
 1D, 2D, 3D Filters
-====
+---
 Moving into more complexity, the 1D, 2D and 3D kalman filters are all the same process but vary in the sizes of the matrices due to the variable they are tracking.
 
 The process is as follows:
