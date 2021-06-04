@@ -1,4 +1,4 @@
-# Kalman_filter
+# Kalman Filter Tracker
 Learning the kalman filter one complexity at a time
 
 The numeric kalman filter does not have matrices and is a simple example calculating errors and updating a numeric state.
@@ -47,6 +47,7 @@ The prediction step uses the previous state, previous process covariance matrix 
 Firstly, the predicted state equation:
 
 X_p = A*X + B*u + w
+<img src="https://latex.codecogs.com/svg/latex?\Large&space;x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}" title="\Large x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}"/>
 
 Where X_p is the predicted state, A and B are transitional matrices, u is the control matrix and w is the noise.
 
