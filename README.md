@@ -48,11 +48,11 @@ Firstly, the predicted state equation:
 
 <img src="https://latex.codecogs.com/svg/latex?X_p=AX&plus;Bu&plus;w" title="X_p=AX+Bu+w" />
 
-Where X_p is the predicted state, A and B are transitional matrices, u is the control matrix and w is the noise.
+Where Xp is the predicted state, A and B are transitional matrices, u is the control matrix and w is the noise.
 
-Secondly, the predicted process covariance matrix P_p:
+Secondly, the predicted process covariance matrix Pp:
 
-P_p = A*P*A^T + Q
+<img src="https://latex.codecogs.com/svg.latex?P_p=APA^T&plus;Q" title="P_p=APA^T+Q" />
 
 Where A is a transitional matrix, P is the previous process covariance matrix and Q is the process noise.
 
@@ -61,29 +61,29 @@ Measurement Step
 ---
 The measurement step processes the new measurement into the correct matrix format for use. In this step updates to the measurement error can also be updated.
 
-Y = C*Y_m + Z
+<img src="https://latex.codecogs.com/svg.latex?Y=CY_m&plus;Z" title="Y=CY_m+Z" />
 
-Where Y is the new measurement matrix, C is a transitional matrix, Y_m is the raw measurement and Z is the measurement noise.
+Where Y is the new measurement matrix, C is a transitional matrix, Ym is the raw measurement and Z is the measurement noise.
 
 ---
 Kalman Gain
 ---
 The Kalman gain depicts how much of the predicted state and how much of the measurement to use in forming the new kalman filtered state. This values changes based on the process covariance matrix as follows:
 
-K = P_P*H^T / (H*P_P*H^T + R)
+<img src="https://latex.codecogs.com/svg.latex?K=\frac{P_pH^T}{HP_pH^T&plus;R}" title="K=\frac{P_pH^T}{HP_pH^T+R}" />
 
-Where K is the kalman gain, P_p is the predicted process covariance matrix, H is a transitional matrix enabling matrix devision and R is the measurement error matrix.
+Where K is the kalman gain, Pp is the predicted process covariance matrix, H is a transitional matrix enabling matrix devision and R is the measurement error matrix.
 
 ---
 New State
 ---
 The new state and accompaning process covariance matrix can now be calculated.
 
-X = X_p + K[Y-H*X_p]
+<img src="https://latex.codecogs.com/svg.latex?X=X_p&plus;K[Y-HX_p]" title="X=X_p+K[Y-HX_p]" />
 
-P = (I-K*H)*P_P
+<img src="https://latex.codecogs.com/svg.latex?P=(I-KH)P_p" title="P=(I-KH)P_p" />
 
-Where X_p is the predicted state, K is the kalman gain, Y is the measurement, H is a transitional matrix, I is the identity matrix of correct size, and P_P is the predicted process covariance matrix.
+Where Xp is the predicted state, K is the kalman gain, Y is the measurement, H is a transitional matrix, I is the identity matrix of correct size, and Pp is the predicted process covariance matrix.
 
 With the new state and process covariance matrix, the process can be repeated for a new measurement coming into the system.
 
