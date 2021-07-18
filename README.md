@@ -1,18 +1,17 @@
 # Kalman Filter Tracker #
 Learning the kalman filter one complexity at a time
 
-The numeric kalman filter does not have matrices and is a simple example calculating errors and updating a numeric state.
+The numeric kalman filter does not have matrices and is a simple example of calculating errors and updating a numeric state.
 
 The process is as follows:
 
-1) setup observations from sensor as a list
+1) Setup observations from a sensor as a list
 2) Instantiate kalman filter object with parameters
 3) Calculate kalman gain
 4) Calculate a kalman state estimate
 5) Calculate the error in the estimate to the observation
-6) Get the next measurement from sensor list and repeat from step 3
-
-Plot the results.
+6) Get the next measurement from sensor list and repeat from step 3 for remaining measurements
+7) Plot the results.
 
 
 1D, 2D, 3D Filters
